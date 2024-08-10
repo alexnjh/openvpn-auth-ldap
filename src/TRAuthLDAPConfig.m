@@ -82,6 +82,9 @@ typedef enum {
 	/* OpenVPN Challenge/Response */
     LF_AUTH_PASSWORD_CR,      /* Password is in challenge/repsonse format */
 
+	/* OpenVPN Challenge/Response */
+    LF_AUTH_PASSWORD_PI,      /* Password is in privacyidea format */
+
     /* Misc Shared */
     LF_UNKNOWN_OPCODE,          /* Unknown Opcode */
 } ConfigOpcode;
@@ -168,6 +171,14 @@ static OpcodeTable OpenVPNCRVariables[] = {
     { NULL, 0 }
 };
 
+/* PrivacyIDEA Password/OTP */
+static OpcodeTable PrivacyIDEAVariables[] = {
+    /* name                 opcode                      multi   required */
+    { "PasswordIsPI",    LF_AUTH_PASSWORD_PI,  NO,     NO },
+    { NULL, 0 }
+};
+
+
 /* Section Types */
 static OpcodeTable *Sections[] = {
     SectionTypes,
@@ -186,6 +197,7 @@ static OpcodeTable *AuthSection[] = {
     GenericLDAPVariables,
     GenericPFVariables,
     OpenVPNCRVariables,
+    PrivacyIDEAVariables,    
 	NULL
 };
 
@@ -699,6 +711,7 @@ error:
             switch(opcodeEntry->opcode) {
                 BOOL requireGroup;
 				BOOL passWordCR;
+                BOOL passWordPI;
 
                 case LF_AUTH_REQUIRE_GROUP:
                     if (![value boolValue: &requireGroup]) {
@@ -728,6 +741,15 @@ error:
                     }
                     [self setPassWordIsCR: passWordCR];
                     break;
+
+                case LF_AUTH_PASSWORD_PI:
+                   if (![value boolValue: &passWordPI]) {
+                        [self errorBoolValue: value];
+                        return;
+                    }
+                    [self setPassWordIsPI: passWordPI];
+                    break;
+
 
                 /* Unknown Setting */
                 default:
@@ -1019,4 +1041,13 @@ error:
 - (void) setPassWordIsCR: (BOOL) newCRSetting {
     _passwordISCR = newCRSetting;
 }
+
+- (BOOL) passWordIsPI {
+    return (_passwordISPI);
+}
+
+- (void) setPassWordIsPI: (BOOL) newPISetting {
+    _passwordISPI = newPISetting;
+}
+
 @end

@@ -44,6 +44,7 @@
 #import <TRVPNPlugin.h>
 
 #include "openvpn-cr.h"
+#include "privacyidea-otp.h"
 
 /* Plugin Context */
 typedef struct ldap_ctx {
@@ -427,12 +428,27 @@ static TRLDAPGroupConfig *find_ldap_group(TRLDAPConnection *ldap, TRAuthLDAPConf
 static int handle_auth_user_pass_verify(ldap_ctx *ctx, TRLDAPConnection *ldap, TRLDAPEntry *ldapUser, const char *password) {
     TRLDAPGroupConfig *groupConfig;
 
+    if ([ctx->config passWordIsCR] && [ctx->config passWordIsPI]) {
+        [TRLog error: "PasswordIsCR and PasswordIsPI is mutually exclusive."];
+        return (OPENVPN_PLUGIN_FUNC_ERROR);
+    }
+
 	const char *auth_password = password;
 	if ([ctx->config passWordIsCR]) {
 		openvpn_response resp;
 		char *parse_error;
 		if (!extract_openvpn_cr(password, &resp, &parse_error)) {
-	        [TRLog error: "Error extracting challenge/response from password. Parse error = '%s'", 	parse_error];
+	        [TRLog error: "Error extracting challenge/response from password. Parse error = '%s'", parse_error];
+	        return (OPENVPN_PLUGIN_FUNC_ERROR);
+		}
+		auth_password = (const char*)resp.password;
+	}
+
+	if ([ctx->config passWordIsPI]) {
+		privacyidea_response resp;
+		char *parse_error;
+		if (!extract_privacyidea_otp_and_password(password, &resp, &parse_error)) {
+	        [TRLog error: "Error extracting pasword/otp from password. Parse error = '%s'", parse_error];
 	        return (OPENVPN_PLUGIN_FUNC_ERROR);
 		}
 		auth_password = (const char*)resp.password;
